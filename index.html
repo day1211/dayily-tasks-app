@@ -88,35 +88,27 @@
             background: #fecaca;
             border-radius: 10px;
         }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
 <body class="min-h-screen">
     <div id="app" class="max-w-md mx-auto px-4 pb-12 safe-top">
         
-        <!-- 載入中畫面 / 環境警告 -->
+        <!-- 載入中畫面 -->
         <div id="loadingOverlay" class="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-8">
             <div id="loadingSpinner" class="spinner mb-4"></div>
             <p id="loadingText" class="text-rose-500 font-bold text-center">正在連線至雲端資料庫...</p>
             
             <div id="localWarning" class="hidden mt-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl text-amber-800 text-sm w-full">
                 <h3 class="font-bold text-lg mb-2 flex items-center text-rose-600">
-                    <i class="fas fa-exclamation-triangle mr-2"></i> 連線失敗 / 本地執行
+                    <i class="fas fa-exclamation-triangle mr-2"></i> 連線失敗
                 </h3>
-                <p id="errorDetail" class="mb-2 font-bold text-xs opacity-75">錯誤詳情：尚未連線</p>
-                <p class="mb-4 text-xs opacity-80">
-                    如果您是直接「打開檔案 (file://)」，瀏覽器會阻擋 Firebase 連線。
-                </p>
-                
+                <p class="mb-2 font-bold text-xs">錯誤代碼：<span id="errorCode" class="text-rose-500 underline">None</span></p>
                 <div class="space-y-3">
-                    <button onclick="startOfflineMode()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">
-                        進入離線模式 (試用)
-                    </button>
-                    <div class="text-[10px] bg-white/50 p-2 rounded-lg opacity-80">
-                        <b>正確同步的方法：</b><br>
-                        1. 將此檔案上傳至 GitHub Pages 或 Vercel<br>
-                        2. 確保網址是 https:// 開頭<br>
-                        3. 在 Firebase 授權您的 github.io 網域
-                    </div>
+                    <button onclick="location.reload()" class="w-full bg-rose-500 text-white py-3 rounded-xl font-bold">重試連線</button>
+                    <button onclick="startOfflineMode()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-bold shadow-md">進入離線模式 (試用)</button>
                 </div>
             </div>
         </div>
@@ -124,14 +116,14 @@
         <!-- 登入畫面 -->
         <div id="loginView" class="mt-12">
             <div id="offlineBadge" class="hidden text-center mb-6">
-                <span class="bg-gray-200 text-gray-500 text-[10px] px-3 py-1 rounded-full font-bold">目前處於離線模式</span>
+                <span class="bg-gray-200 text-gray-500 text-[10px] px-3 py-1 rounded-full font-bold">離線模式</span>
             </div>
             <div class="text-center mb-10">
                 <div class="inline-block p-4 bg-white rounded-3xl shadow-sm mb-4">
                     <span class="text-5xl">🌈</span>
                 </div>
                 <h1 class="text-3xl font-bold text-rose-500">成長小天地</h1>
-                <p class="text-gray-400 text-sm mt-2">陪伴女兒快樂成長每一天</p>
+                <p id="currentDateDisplay" class="text-gray-400 text-sm mt-2 font-bold"></p>
             </div>
 
             <div class="grid gap-4">
@@ -139,10 +131,9 @@
                     <span class="text-4xl mr-4">👨‍👩‍👧</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800 text-lg">爸爸媽媽</p>
-                        <p class="text-xs text-gray-400 italic">管理任務與查看進度</p>
+                        <p class="text-xs text-gray-400 italic">管理任務與進度</p>
                     </div>
                 </button>
-
                 <button onclick="showLoginModal('wallet')" class="bg-white p-5 rounded-3xl card-shadow border-l-8 border-pink-400 flex items-center active:scale-95 transition-all">
                     <span class="text-4xl mr-4">👛</span>
                     <div class="text-left">
@@ -150,12 +141,11 @@
                         <p class="text-xs text-gray-400 italic">今天的挑戰是什麼呢？</p>
                     </div>
                 </button>
-
                 <button onclick="showLoginModal('full')" class="bg-white p-5 rounded-3xl card-shadow border-l-8 border-orange-400 flex items-center active:scale-95 transition-all">
                     <span class="text-4xl mr-4">🌕</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800 text-lg">小滿滿</p>
-                        <p class="text-xs text-gray-400 italic">完成任務領取獎金！</p>
+                        <p class="text-xs text-gray-400 italic">完成任務領取獎勵！</p>
                     </div>
                 </button>
             </div>
@@ -175,71 +165,58 @@
 
         <!-- 家長介面 -->
         <div id="parentView" class="hidden">
-            <div class="flex items-center justify-between mb-8">
-                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
-                    <i class="fas fa-sign-out-alt"></i> 登出
-                </button>
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm"><i class="fas fa-sign-out-alt"></i> 登出</button>
                 <h2 class="text-xl font-bold text-gray-800">管理後台</h2>
                 <div class="w-12"></div>
             </div>
 
-            <nav class="flex mb-6 bg-white/50 p-1.5 rounded-2xl shadow-inner overflow-x-auto whitespace-nowrap no-scrollbar">
-                <button onclick="switchParentTab('tasks')" id="tab-tasks" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 text-white font-bold transition-all">任務</button>
-                <button onclick="switchParentTab('prizes')" id="tab-prizes" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">獎項</button>
-                <button onclick="switchParentTab('history')" id="tab-history" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">紀錄</button>
-                <button onclick="switchParentTab('settings')" id="tab-settings" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">安全</button>
+            <nav class="flex mb-6 bg-white/50 p-1.5 rounded-2xl shadow-inner overflow-x-auto no-scrollbar">
+                <button onclick="switchParentTab('tasks')" id="tab-tasks" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 text-white font-bold whitespace-nowrap">任務設定</button>
+                <button onclick="switchParentTab('prizes')" id="tab-prizes" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold whitespace-nowrap">轉盤獎項</button>
+                <button onclick="switchParentTab('history')" id="tab-history" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold whitespace-nowrap">歷史紀錄</button>
+                <button onclick="switchParentTab('settings')" id="tab-settings" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold whitespace-nowrap">安全</button>
             </nav>
 
             <div id="parent-content" class="pb-10">
+                <!-- 任務設定 -->
                 <div id="parent-tasks" class="space-y-4">
                     <div class="bg-white p-6 rounded-[2rem] card-shadow">
-                        <h3 class="font-bold text-rose-500 mb-4 flex items-center">
-                            <i class="fas fa-plus-circle mr-2"></i> 指派新任務
-                        </h3>
+                        <h3 class="font-bold text-rose-500 mb-4 flex items-center"><i class="fas fa-plus-circle mr-2"></i> 新增任務</h3>
                         <div class="space-y-3">
-                            <select id="taskTarget" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
-                                <option value="wallet">指派給：小荷包</option>
-                                <option value="full">指派給：小滿滿</option>
-                            </select>
-                            <input type="text" id="taskName" placeholder="任務名稱" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
                             <div class="flex space-x-2">
-                                <input type="number" id="taskReward" placeholder="獎勵幣" class="flex-1 bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
-                                <button onclick="addTask()" class="bg-rose-500 text-white px-6 py-3 rounded-xl font-bold active:scale-95">新增</button>
+                                <select id="taskTarget" class="flex-1 bg-gray-50 border-none rounded-xl p-3 text-sm"><option value="wallet">指派給：小荷包</option><option value="full">指派給：小滿滿</option></select>
+                                <select id="taskType" class="flex-1 bg-gray-50 border-none rounded-xl p-3 text-sm"><option value="daily">每日任務</option><option value="once">單次任務</option></select>
+                            </div>
+                            <input type="text" id="taskName" placeholder="任務名稱 (例：收拾書桌)" class="w-full bg-gray-50 border-none rounded-xl p-3">
+                            <div class="flex space-x-2">
+                                <input type="number" id="taskReward" placeholder="獎勵遊戲幣" class="flex-1 bg-gray-50 border-none rounded-xl p-3">
+                                <button onclick="addTask()" class="bg-rose-500 text-white px-6 rounded-xl font-bold active:scale-95">新增</button>
                             </div>
                         </div>
                     </div>
                     <div id="taskListDisplay" class="space-y-3"></div>
                 </div>
-
+                <!-- 轉盤獎項 -->
                 <div id="parent-prizes" class="hidden">
                     <div class="bg-white p-6 rounded-[2rem] card-shadow">
-                        <p class="text-sm text-gray-400 mb-4 italic">轉盤格子設定 (共 12 格)：</p>
+                        <p class="text-sm text-gray-400 mb-4 italic text-center">設定 12 個大轉盤獎位</p>
                         <div id="prizeInputs" class="grid grid-cols-2 gap-3"></div>
-                        <button onclick="savePrizes()" class="w-full mt-6 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200 active:scale-95 transition-all">儲存轉盤設定</button>
+                        <button onclick="savePrizes()" class="w-full mt-6 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg">儲存設定</button>
                     </div>
                 </div>
-
+                <!-- 歷史紀錄 -->
                 <div id="parent-history" class="hidden">
-                    <div id="historyList" class="space-y-3"></div>
+                    <div id="historyList" class="space-y-6"></div>
                 </div>
-
+                <!-- 安全設定 -->
                 <div id="parent-settings" class="hidden">
                     <div class="bg-white p-6 rounded-[2rem] card-shadow">
-                        <h3 class="font-bold text-gray-800 mb-4">PIN 碼修改</h3>
                         <div class="space-y-4">
-                            <div class="bg-rose-50 p-4 rounded-2xl">
-                                <label class="text-xs text-rose-400 font-bold block mb-1">家長 PIN</label>
-                                <input type="text" id="pin-parents" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
-                            </div>
-                            <div class="bg-pink-50 p-4 rounded-2xl">
-                                <label class="text-xs text-pink-400 font-bold block mb-1">小荷包 PIN</label>
-                                <input type="text" id="pin-wallet" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
-                            </div>
-                            <div class="bg-orange-50 p-4 rounded-2xl">
-                                <label class="text-xs text-orange-400 font-bold block mb-1">小滿滿 PIN</label>
-                                <input type="text" id="pin-full" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
-                            </div>
-                            <button onclick="saveSettings()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold active:scale-95 transition-all">確認修改</button>
+                            <div class="bg-rose-50 p-4 rounded-2xl"><label class="text-xs text-rose-400 font-bold block mb-1">家長 PIN</label><input type="text" id="pin-parents" class="w-full bg-transparent border-none p-0 font-bold"></div>
+                            <div class="bg-pink-50 p-4 rounded-2xl"><label class="text-xs text-pink-400 font-bold block mb-1">小荷包 PIN</label><input type="text" id="pin-wallet" class="w-full bg-transparent border-none p-0 font-bold"></div>
+                            <div class="bg-orange-50 p-4 rounded-2xl"><label class="text-xs text-orange-400 font-bold block mb-1">小滿滿 PIN</label><input type="text" id="pin-full" class="w-full bg-transparent border-none p-0 font-bold"></div>
+                            <button onclick="saveSettings()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold">確認修改</button>
                         </div>
                     </div>
                 </div>
@@ -249,62 +226,50 @@
         <!-- 女兒介面 -->
         <div id="daughterView" class="hidden">
             <div class="flex items-center justify-between mb-8">
-                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
-                    <i class="fas fa-sign-out-alt"></i> 登出
-                </button>
-                <h2 id="daughterTitle" class="text-xl font-bold text-gray-800"></h2>
-                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold flex items-center shadow-sm">
+                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">登出</button>
+                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold shadow-sm flex items-center">
                     <i class="fas fa-coins mr-2"></i> <span id="coinBalance">0</span>
                 </div>
             </div>
             
-            <div id="daughterMain" class="space-y-8">
+            <div id="daughterMain" class="space-y-6">
                 <div class="bg-white p-6 rounded-[2.5rem] card-shadow">
-                    <h3 class="font-bold text-gray-800 mb-6 flex items-center text-lg">
-                        <i class="fas fa-tasks mr-2 text-rose-300"></i> 今日任務
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800 text-lg"><i class="fas fa-calendar-day mr-2 text-rose-300"></i> 今日任務</h3>
+                        <span id="daughterDate" class="text-xs text-gray-400 font-medium"></span>
+                    </div>
                     <div id="daughterTaskList" class="space-y-4"></div>
                 </div>
-                
-                <div class="text-center px-4">
-                    <button onclick="showWheel()" class="w-full bg-gradient-to-r from-rose-400 to-orange-400 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl shadow-rose-200 active:scale-95 transition-all">
-                        🎡 玩大轉盤 (100幣)
-                    </button>
+
+                <div class="bg-white p-6 rounded-[2.5rem] card-shadow">
+                    <h3 class="font-bold text-gray-800 mb-4"><i class="fas fa-gift mr-2 text-orange-300"></i> 我的獎品背包</h3>
+                    <div id="daughterInventory" class="space-y-3 max-h-40 overflow-y-auto no-scrollbar"></div>
                 </div>
+                
+                <button onclick="showWheel()" class="w-full bg-gradient-to-r from-rose-400 to-orange-400 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl active:scale-95 transition-all">🎡 玩大轉盤 (100幣)</button>
             </div>
         </div>
 
         <!-- 轉盤畫面 -->
         <div id="wheelView" class="hidden">
             <div class="flex items-center justify-between mb-10">
-                <button onclick="backToDaughter()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
-                    <i class="fas fa-arrow-left"></i> 返回
-                </button>
-                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold flex items-center">
-                    <i class="fas fa-coins mr-2"></i> <span id="wheelCoinBalance">0</span>
-                </div>
+                <button onclick="backToDaughter()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">返回</button>
+                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold flex items-center"><i class="fas fa-coins mr-2"></i> <span id="wheelCoinBalance">0</span></div>
             </div>
-            
             <div class="flex flex-col items-center justify-center min-h-[50vh]">
-                <div class="wheel-container mb-12">
-                    <div class="wheel-pointer"></div>
-                    <canvas id="wheel" width="300" height="300"></canvas>
-                </div>
-                
-                <button id="spinBtn" onclick="spinWheel()" class="w-full max-w-xs bg-rose-500 text-white py-5 rounded-[2rem] font-bold text-2xl shadow-xl shadow-rose-100 active:scale-95 transition-all disabled:bg-gray-300">
-                    開始抽獎
-                </button>
+                <div class="wheel-container mb-12"><div class="wheel-pointer"></div><canvas id="wheel" width="300" height="300"></canvas></div>
+                <button id="spinBtn" onclick="spinWheel()" class="w-full max-w-xs bg-rose-500 text-white py-5 rounded-[2rem] font-bold text-2xl shadow-xl disabled:bg-gray-300">開始抽獎</button>
             </div>
         </div>
     </div>
 
     <!-- 彈窗通知 -->
     <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[100] p-6 backdrop-blur-md">
-        <div class="bg-white rounded-[3rem] p-10 w-full max-w-sm text-center card-shadow">
+        <div class="bg-white rounded-[3rem] p-10 w-full max-w-sm text-center">
             <div id="modalEmoji" class="text-7xl mb-6">🎉</div>
             <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-3"></h3>
-            <p id="modalMsg" class="text-gray-500 mb-8 leading-relaxed"></p>
-            <button onclick="closeModal()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold text-lg active:scale-95">太棒了！</button>
+            <p id="modalMsg" class="text-gray-500 mb-8"></p>
+            <button onclick="closeModal()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold active:scale-95">太棒了！</button>
         </div>
     </div>
 
@@ -314,74 +279,50 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        /** 取得 Firebase 配置 **/
-        let firebaseConfig;
-        try {
-            // 首先嘗試檢查環境變數（AI 預覽模式）
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } else {
-                // 如果環境變數不存在，使用您提供的硬編碼配置
-                firebaseConfig = {
-                    apiKey: "AIzaSyBltihUwQntGYwr7SWnMhTn0wbSikKDrA0",
-                    authDomain: "daily-task-app-b3903.firebaseapp.com",
-                    projectId: "daily-task-app-b3903",
-                    storageBucket: "daily-task-app-b3903.firebasestorage.app",
-                    messagingSenderId: "604414919964",
-                    appId: "1:604414919964:web:b5ad125e0a2e69cc1266d9",
-                    measurementId: "G-Y0C8C24WMH"
-                };
-            }
-        } catch (e) {
-            console.warn("Config error", e);
-            firebaseConfig = null;
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyBltihUwQntGYwr7SWnMhTn0wbSikKDrA0",
+            authDomain: "daily-task-app-b3903.firebaseapp.com",
+            projectId: "daily-task-app-b3903",
+            storageBucket: "daily-task-app-b3903.firebasestorage.app",
+            messagingSenderId: "604414919964",
+            appId: "1:604414919964:web:b5ad125e0a2e69cc1266d9",
+            measurementId: "G-Y0C8C24WMH"
+        };
 
-        let db, auth, userAuth;
+        let db, auth, userAuth, state = {};
         let isOffline = false;
-        let state = {};
-        const appId = 'daily-task-v3-release';
+        const appId = 'task-app-v4'; // 升級版本號
+        
+        const getTodayStr = () => new Date().toLocaleDateString('zh-TW');
+
         const initialState = {
             tasks: [],
-            users: { wallet: { name: "小荷包", coins: 0 }, full: { name: "小滿滿", coins: 0 } },
-            prizes: ["糖果", "電視20分", "去公園", "冰淇淋", "大抱抱", "再轉一次", "神秘禮物", "點心", "Switch", "彩色筆", "免家事", "故事書"],
+            users: { 
+                wallet: { name: "小荷包", coins: 0, inventory: [] }, 
+                full: { name: "小滿滿", coins: 0, inventory: [] } 
+            },
+            prizes: ["糖果", "電視20分", "去公園", "冰淇淋", "大抱抱", "再轉一次", "玩具折價", "點心", "Switch", "彩色筆", "免家事", "故事書"],
             history: [],
-            pins: { parents: "8888", wallet: "1111", full: "2222" }
+            pins: { parents: "8888", wallet: "1111", full: "2222" },
+            lastResetDate: getTodayStr()
         };
 
         window.startOfflineMode = () => {
             isOffline = true;
             document.getElementById('loadingOverlay').classList.add('hidden');
             document.getElementById('offlineBadge').classList.remove('hidden');
-            const saved = localStorage.getItem('local_task_v3');
+            const saved = localStorage.getItem('local_task_v4');
             state = saved ? JSON.parse(saved) : initialState;
+            checkDailyReset();
             refreshUI();
         };
 
-        function showWarning(code, detail) {
-            if (!isOffline) {
-                document.getElementById('loadingSpinner').classList.add('hidden');
-                document.getElementById('loadingText').innerText = code || "環境不支援";
-                document.getElementById('errorDetail').innerText = "錯誤詳情：" + (detail || "瀏覽器封鎖了連線");
-                document.getElementById('localWarning').classList.remove('hidden');
-            }
-        }
-
         const init = async () => {
-            if (!firebaseConfig || !firebaseConfig.apiKey) {
-                showWarning("配置缺失", "找不到 Firebase Config");
-                return;
-            }
-
             try {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
-
-                // 嘗試登入
-                await signInAnonymously(auth).catch(err => { 
-                    throw `Auth Error: ${err.code}`; 
-                });
+                await signInAnonymously(auth).catch(err => { throw `Auth: ${err.code}`; });
 
                 onAuthStateChanged(auth, (u) => {
                     userAuth = u;
@@ -390,37 +331,44 @@
                         onSnapshot(docRef, (snap) => {
                             if (snap.exists()) {
                                 state = snap.data();
+                                if (checkDailyReset()) sync(); // 如果有重置，同步回雲端
                                 refreshUI();
                             } else {
                                 setDoc(docRef, initialState);
                             }
                             document.getElementById('loadingOverlay').classList.add('hidden');
-                        }, (err) => {
-                            showWarning("連線失敗", `Firestore: ${err.code}`);
-                        });
+                        }, (err) => showWarning(`Firestore: ${err.code}`));
                     }
                 });
-            } catch (e) { 
-                showWarning("初始化錯誤", e); 
-            }
+            } catch (e) { showWarning(e); }
         };
+
+        function checkDailyReset() {
+            const today = getTodayStr();
+            if (state.lastResetDate !== today) {
+                state.tasks.forEach(t => { if(t.type === 'daily') t.completed = false; });
+                state.lastResetDate = today;
+                return true;
+            }
+            return false;
+        }
+
+        function showWarning(code) {
+            if (!isOffline) {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('errorCode').innerText = code || "Unknown";
+                document.getElementById('localWarning').classList.remove('hidden');
+            }
+        }
 
         init();
 
-        // --- 全域變數定義 ---
-        let targetRoleForLogin;
-        let currentUser;
-        let spinning = false;
-
         // --- 核心邏輯 ---
-        window.showLoginModal = (role) => { 
-            targetRoleForLogin = role; 
-            document.getElementById('authModal').classList.remove('hidden'); 
-            document.getElementById('pinInput').value = ''; 
-        };
+        let targetRoleForLogin, currentUser, spinning = false;
 
+        window.showLoginModal = (role) => { targetRoleForLogin = role; document.getElementById('authModal').classList.remove('hidden'); document.getElementById('pinInput').value = ''; };
         window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
-
+        
         window.verifyPin = () => {
             if (document.getElementById('pinInput').value === state.pins[targetRoleForLogin]) {
                 currentUser = targetRoleForLogin;
@@ -428,39 +376,27 @@
                 document.getElementById('loginView').classList.add('hidden');
                 if (currentUser === 'parents') {
                     document.getElementById('parentView').classList.remove('hidden');
-                    updateSettingsInputs(); 
-                    renderParentPrizeInputs();
-                } else {
-                    document.getElementById('daughterView').classList.remove('hidden');
-                }
+                    updateSettingsInputs(); renderParentPrizeInputs();
+                } else document.getElementById('daughterView').classList.remove('hidden');
                 refreshUI();
-            } else {
-                alert('PIN 碼錯誤！');
-            }
+            } else alert('PIN 碼錯誤');
         };
 
-        window.logout = () => { 
-            currentUser = null; 
-            document.querySelectorAll('#parentView, #daughterView, #wheelView').forEach(v => v.classList.add('hidden')); 
-            document.getElementById('loginView').classList.remove('hidden'); 
-        };
+        window.logout = () => { currentUser = null; document.querySelectorAll('#parentView, #daughterView, #wheelView').forEach(v => v.classList.add('hidden')); document.getElementById('loginView').classList.remove('hidden'); };
 
         async function sync() {
-            if (isOffline) { 
-                localStorage.setItem('local_task_v3', JSON.stringify(state)); 
-                refreshUI(); 
-            } else if (userAuth) {
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app', 'global'), state);
-            }
+            if (isOffline) { localStorage.setItem('local_task_v4', JSON.stringify(state)); refreshUI(); }
+            else if (userAuth) await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app', 'global'), state);
         }
 
         function refreshUI() {
+            document.getElementById('currentDateDisplay').innerText = `今日：${getTodayStr()}`;
             if (!currentUser) return;
-            if (currentUser === 'parents') { 
-                renderTaskList(); 
-                renderHistory(); 
-            } else { 
+            if (currentUser === 'parents') { renderTaskList(); renderHistory(); }
+            else { 
+                document.getElementById('daughterDate').innerText = getTodayStr();
                 updateDaughterUI(); 
+                renderInventory();
             }
             if (!document.getElementById('wheelView').classList.contains('hidden')) {
                 document.getElementById('wheelCoinBalance').innerText = state.users[currentUser].coins;
@@ -468,180 +404,229 @@
             }
         }
 
+        // --- 任務系統 ---
         window.addTask = async () => {
             const name = document.getElementById('taskName').value;
             const reward = parseInt(document.getElementById('taskReward').value);
             const target = document.getElementById('taskTarget').value;
+            const type = document.getElementById('taskType').value;
             if (name && reward) { 
-                state.tasks.push({ id: Date.now(), name, reward, target, completed: false }); 
+                state.tasks.push({ id: Date.now(), name, reward, target, type, completed: false }); 
                 document.getElementById('taskName').value = '';
-                document.getElementById('taskReward').value = '';
                 sync(); 
             }
         };
 
-        window.deleteTask = async (id) => { 
-            state.tasks = state.tasks.filter(t => t.id !== id); 
-            sync(); 
-        };
+        window.deleteTask = (id) => { state.tasks = state.tasks.filter(t => t.id !== id); sync(); };
 
-        window.completeTask = async (id) => {
+        window.toggleTask = async (id) => {
             const t = state.tasks.find(x => x.id === id);
-            if (t && !t.completed) { 
-                t.completed = true; 
-                state.users[currentUser].coins += t.reward; 
-                state.history.push({ time: Date.now(), user: currentUser, task: t.name }); 
-                sync(); 
-                showNotification('🌟 太棒了', `完成「${t.name}」`, `得到 ${t.reward} 幣！`); 
+            if (!t) return;
+            
+            const user = state.users[currentUser];
+            if (!t.completed) {
+                // 完成任務
+                t.completed = true;
+                user.coins += t.reward;
+                state.history.push({ 
+                    id: Date.now(),
+                    time: Date.now(), 
+                    date: getTodayStr(),
+                    user: currentUser, 
+                    content: `完成「${t.name}」`,
+                    type: 'task',
+                    amount: `+${t.reward}`
+                });
+                showNotification('🌟 太棒了', `完成「${t.name}」`, `得到 ${t.reward} 幣！`);
+            } else {
+                // 取消完成 (Uncheck)
+                t.completed = false;
+                user.coins -= t.reward;
+                state.history.push({ 
+                    id: Date.now(),
+                    time: Date.now(), 
+                    date: getTodayStr(),
+                    user: currentUser, 
+                    content: `取消完成「${t.name}」`,
+                    type: 'system',
+                    amount: `-${t.reward}`
+                });
+            }
+            sync();
+        };
+
+        // --- 轉盤與兌換 ---
+        window.showWheel = () => {
+            if(state.users[currentUser].coins < 100) { showNotification('🪙 幣不夠喔', '累積 100 幣才能抽獎', '加油加油！'); return; }
+            document.getElementById('daughterView').classList.add('hidden');
+            document.getElementById('wheelView').classList.remove('hidden');
+            refreshUI();
+        };
+        window.backToDaughter = () => { document.getElementById('wheelView').classList.add('hidden'); document.getElementById('daughterView').classList.remove('hidden'); };
+
+        window.spinWheel = async () => {
+            if (spinning) return; spinning = true;
+            state.users[currentUser].coins -= 100;
+            await sync();
+            const wheel = document.getElementById('wheel');
+            const deg = Math.floor(Math.random() * 360) + 3600;
+            wheel.style.transform = `rotate(${deg}deg)`;
+            setTimeout(() => {
+                spinning = false;
+                const actual = (deg % 360);
+                const idx = Math.floor(((360 + 270 - actual) % 360) / 30);
+                const prize = state.prizes[idx];
+                
+                // 進入背包
+                if (!state.users[currentUser].inventory) state.users[currentUser].inventory = [];
+                state.users[currentUser].inventory.push({ id: Date.now(), name: prize, status: 'available' });
+                
+                // 紀錄歷史
+                state.history.push({
+                    id: Date.now() + 1,
+                    time: Date.now(),
+                    date: getTodayStr(),
+                    user: currentUser,
+                    content: `大轉盤抽中獎品：【${prize}】`,
+                    type: 'spin',
+                    amount: '-100'
+                });
+                
+                sync();
+                showNotification('🎁 抽中了！', `獲得：${prize}`, '獎品已放入你的背包囉！');
+                wheel.style.transition = 'none'; wheel.style.transform = `rotate(${actual}deg)`;
+                setTimeout(() => { wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0, 0.2, 1)'; }, 100);
+            }, 4000);
+        };
+
+        window.redeemPrize = (inventoryId) => {
+            const inv = state.users[currentUser].inventory.find(i => i.id === inventoryId);
+            if (inv && inv.status === 'available') {
+                inv.status = 'redeemed';
+                state.history.push({
+                    id: Date.now(),
+                    time: Date.now(),
+                    date: getTodayStr(),
+                    user: currentUser,
+                    content: `兌換了獎品：【${inv.name}】`,
+                    type: 'redeem'
+                });
+                sync();
+                showNotification('📨 兌換請求已發送', '快去找爸爸媽媽領獎吧！', inv.name);
             }
         };
 
-        window.savePrizes = async () => { 
-            for(let i=0; i<12; i++) {
-                state.prizes[i] = document.getElementById(`prize-input-${i}`).value; 
-            }
-            sync(); 
-            showNotification('🎡 設定完成', '轉盤已經更新', '女兒們可以抽獎囉！');
-        };
+        // --- 渲染函數群 ---
+        function updateDaughterUI() {
+            const user = state.users[currentUser];
+            document.getElementById('coinBalance').innerText = user.coins;
+            const l = document.getElementById('daughterTaskList'); l.innerHTML = '';
+            
+            const myTasks = state.tasks.filter(t => t.target === currentUser);
+            if (myTasks.length === 0) l.innerHTML = '<p class="text-center text-gray-300 py-4">今天還沒有安排任務喔</p>';
+            
+            myTasks.forEach(t => {
+                const d = document.createElement('div');
+                d.className = `p-4 rounded-2xl flex items-center mb-3 transition-all ${t.completed?'bg-rose-50 border-2 border-rose-100':'bg-white shadow-sm ring-1 ring-rose-50'}`;
+                d.innerHTML = `
+                    <button onclick="toggleTask(${t.id})" class="w-10 h-10 rounded-full border-4 border-rose-200 mr-4 flex items-center justify-center ${t.completed?'bg-rose-400 border-rose-400 text-white':'bg-white'}">
+                        ${t.completed ? '<i class="fas fa-check"></i>' : ''}
+                    </button>
+                    <div class="flex-1">
+                        <div class="font-bold ${t.completed?'text-rose-400 line-through':'text-gray-700'}">${t.name}</div>
+                        <div class="flex items-center text-[10px] space-x-2">
+                            <span class="text-amber-500 font-bold">${t.reward} 幣</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="${t.type==='daily'?'text-blue-300':'text-purple-300'}">${t.type==='daily'?'每日任務':'單次任務'}</span>
+                        </div>
+                    </div>
+                `;
+                l.appendChild(d);
+            });
+        }
 
-        window.saveSettings = async () => { 
-            state.pins.parents = document.getElementById('pin-parents').value; 
-            state.pins.wallet = document.getElementById('pin-wallet').value; 
-            state.pins.full = document.getElementById('pin-full').value; 
-            sync(); 
-            showNotification('🔐 密碼更新', 'PIN 碼已修改', '請記得新密碼喔！');
-        };
-
-        function updateSettingsInputs() { 
-            document.getElementById('pin-parents').value = state.pins.parents; 
-            document.getElementById('pin-wallet').value = state.pins.wallet; 
-            document.getElementById('pin-full').value = state.pins.full; 
+        function renderInventory() {
+            const l = document.getElementById('daughterInventory'); l.innerHTML = '';
+            const inv = state.users[currentUser].inventory || [];
+            if (inv.length === 0) l.innerHTML = '<p class="text-xs text-gray-300 italic">背包空空的，快去抽獎！</p>';
+            
+            inv.filter(i => i.status === 'available').forEach(i => {
+                const d = document.createElement('div');
+                d.className = 'flex justify-between items-center bg-orange-50 p-3 rounded-xl border border-orange-100';
+                d.innerHTML = `<span class="text-sm font-bold text-orange-700">${i.name}</span><button onclick="redeemPrize(${i.id})" class="bg-orange-400 text-white text-[10px] px-3 py-1 rounded-full font-bold">兌換獎勵</button>`;
+                l.appendChild(d);
+            });
         }
 
         function renderTaskList() {
-            const l = document.getElementById('taskListDisplay'); 
-            l.innerHTML = '';
-            state.tasks.filter(t => !t.completed).forEach(t => {
-                const d = document.createElement('div'); 
-                d.className = 'bg-white p-4 rounded-2xl flex justify-between items-center mb-2 border border-gray-50';
-                d.innerHTML = `<div><span class="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 mr-2">${t.target==='wallet'?'小荷包':'小滿滿'}</span><b>${t.name}</b> <span class="text-amber-500 ml-2">(${t.reward}幣)</span></div><button onclick="deleteTask(${t.id})" class="text-gray-300 px-2"><i class="fas fa-trash"></i></button>`;
+            const l = document.getElementById('taskListDisplay'); l.innerHTML = '<h3 class="font-bold text-gray-400 text-sm mb-2">現有任務列表</h3>';
+            state.tasks.forEach(t => {
+                const d = document.createElement('div'); d.className = 'bg-white p-4 rounded-2xl flex justify-between items-center mb-2 border border-gray-50';
+                d.innerHTML = `<div><span class="text-[10px] font-bold px-2 py-1 rounded bg-gray-100 mr-2">${t.target==='wallet'?'小荷包':'小滿滿'}</span><b>${t.name}</b> <span class="text-[10px] ${t.type==='daily'?'text-blue-400':'text-purple-400'}">${t.type==='daily'?'[每日]':'[單次]'}</span></div><button onclick="deleteTask(${t.id})" class="text-gray-300 hover:text-red-400"><i class="fas fa-trash"></i></button>`;
                 l.appendChild(d);
             });
         }
 
         function renderHistory() {
-            const l = document.getElementById('historyList'); 
-            l.innerHTML = '';
-            [...state.history].reverse().slice(0,10).forEach(h => {
-                const d = document.createElement('div'); 
-                d.className = 'bg-white p-3 rounded-xl text-sm mb-2 border-l-4 border-rose-300 flex justify-between items-center';
-                d.innerHTML = `<span><b>${h.user==='wallet'?'小荷包':'小滿滿'}</b> 完成了 ${h.task}</span><span class="text-gray-300 text-[10px]">${new Date(h.time).toLocaleDateString()}</span>`;
-                l.appendChild(d);
+            const l = document.getElementById('historyList'); l.innerHTML = '';
+            // 依日期分組
+            const groups = {};
+            state.history.forEach(h => {
+                if (!groups[h.date]) groups[h.date] = [];
+                groups[h.date].push(h);
             });
-        }
 
-        function updateDaughterUI() {
-            const u = state.users[currentUser]; 
-            document.getElementById('daughterTitle').innerText = u.name; 
-            document.getElementById('coinBalance').innerText = u.coins;
-            const l = document.getElementById('daughterTaskList'); 
-            l.innerHTML = '';
-            state.tasks.filter(t => t.target === currentUser).forEach(t => {
-                const d = document.createElement('div'); 
-                d.className = `p-4 rounded-2xl flex items-center mb-3 ${t.completed?'opacity-40 bg-gray-50':'bg-white shadow-sm ring-1 ring-rose-50'}`;
-                d.innerHTML = `<button onclick="completeTask(${t.id})" class="w-8 h-8 rounded-full border-4 border-rose-200 mr-4 ${t.completed?'bg-rose-200':''}"></button><div><div class="font-bold text-lg">${t.name}</div><div class="text-xs text-amber-500 font-bold">${t.reward} 幣</div></div>`;
-                l.appendChild(d);
+            const sortedDates = Object.keys(groups).sort((a,b) => new Date(b.replace(/\//g,'-')) - new Date(a.replace(/\//g,'-')));
+
+            sortedDates.forEach(date => {
+                const groupDiv = document.createElement('div');
+                groupDiv.innerHTML = `<h3 class="text-sm font-bold text-rose-500 mb-3 flex items-center"><i class="fas fa-history mr-2"></i> ${date}</h3>`;
+                const logsContainer = document.createElement('div');
+                logsContainer.className = 'space-y-2';
+                
+                groups[date].reverse().forEach(h => {
+                    const d = document.createElement('div');
+                    d.className = 'bg-white p-3 rounded-xl text-xs flex justify-between items-center shadow-sm border border-gray-50';
+                    const icon = h.type==='spin'?'🎡':(h.type==='redeem'?'🎁':(h.type==='task'?'✅':'⚙️'));
+                    d.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="mr-2">${icon}</span>
+                            <span><b>${h.user==='wallet'?'小荷包':'小滿滿'}</b> ${h.content}</span>
+                        </div>
+                        <span class="font-bold ${h.amount?.startsWith('+')?'text-green-500':'text-rose-400'}">${h.amount || ''}</span>
+                    `;
+                    logsContainer.appendChild(d);
+                });
+                groupDiv.appendChild(logsContainer);
+                l.appendChild(groupDiv);
             });
+            if (sortedDates.length === 0) l.innerHTML = '<p class="text-center text-gray-300 py-10">尚無任何活動紀錄</p>';
         }
 
-        function renderParentPrizeInputs() {
-            const c = document.getElementById('prizeInputs'); 
-            c.innerHTML = '';
-            for(let i=0; i<12; i++) { 
-                const inp = document.createElement('input'); 
-                inp.id=`prize-input-${i}`; 
-                inp.value=state.prizes[i]; 
-                inp.className='bg-gray-50 p-2.5 rounded-xl text-xs border-none focus:ring-1 focus:ring-rose-200'; 
-                c.appendChild(inp); 
-            }
-        }
-
-        window.showWheel = () => { 
-            if(state.users[currentUser].coins < 100) { 
-                showNotification('🪙 幣不夠喔', '累積 100 幣才能抽獎', '加油加油！'); 
-                return; 
-            } 
-            document.getElementById('daughterView').classList.add('hidden'); 
-            document.getElementById('wheelView').classList.remove('hidden'); 
-            refreshUI(); 
-        };
-
-        window.backToDaughter = () => { 
-            document.getElementById('wheelView').classList.add('hidden'); 
-            document.getElementById('daughterView').classList.remove('hidden'); 
-        };
-
+        // 其他輔助函數
         function drawWheel() {
-            const canvas = document.getElementById('wheel'); 
-            const ctx = canvas.getContext('2d');
+            const canvas = document.getElementById('wheel'); const ctx = canvas.getContext('2d');
             const colors = ['#FDA4AF', '#FCD34D', '#F9A8D4', '#FB923C', '#6EE7B7', '#93C5FD', '#A5B4FC', '#D8B4FE', '#FDE68A', '#F9A8D4', '#6EE7B7', '#FDBA74'];
-            ctx.clearRect(0,0,300,300); 
-            const slice = (2 * Math.PI) / 12;
+            ctx.clearRect(0,0,300,300); const slice = (2 * Math.PI) / 12;
             for (let i = 0; i < 12; i++) {
-                ctx.beginPath(); 
-                ctx.fillStyle = colors[i % colors.length]; 
-                ctx.moveTo(150, 150); 
-                ctx.arc(150, 150, 145, i * slice, (i + 1) * slice); 
-                ctx.fill(); 
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 1;
-                ctx.stroke(); 
-                ctx.save();
-                ctx.translate(150, 150); 
-                ctx.rotate(i * slice + slice / 2); 
-                ctx.textAlign = "right"; 
-                ctx.fillStyle = "#333"; 
-                ctx.font = "bold 11px Noto Sans TC";
-                ctx.fillText(state.prizes[i].substring(0, 6), 135, 5); 
-                ctx.restore();
+                ctx.beginPath(); ctx.fillStyle = colors[i % colors.length]; ctx.moveTo(150, 150); ctx.arc(150, 150, 145, i * slice, (i + 1) * slice); ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke(); ctx.save();
+                ctx.translate(150, 150); ctx.rotate(i * slice + slice / 2); ctx.textAlign = "right"; ctx.fillStyle = "#333"; ctx.font = "bold 10px Noto Sans TC";
+                ctx.fillText(state.prizes[i].substring(0, 6), 135, 4); ctx.restore();
             }
         }
-
-        window.spinWheel = async () => {
-            if (spinning) return; 
-            spinning = true; 
-            state.users[currentUser].coins -= 100; 
-            await sync();
-            const wheel = document.getElementById('wheel'); 
-            const deg = Math.floor(Math.random() * 360) + 3600;
-            wheel.style.transform = `rotate(${deg}deg)`;
-            setTimeout(() => {
-                spinning = false; 
-                const actual = (deg % 360); 
-                const idx = Math.floor(((360 + 270 - actual) % 360) / 30);
-                showNotification('🎁 抽中了！', `獲得：${state.prizes[idx]}`, '恭喜你！太厲害了！');
-                wheel.style.transition = 'none'; 
-                wheel.style.transform = `rotate(${actual}deg)`;
-                setTimeout(() => { wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0, 0.2, 1)'; }, 100);
-            }, 4000);
-        };
-
-        window.switchParentTab = (tab) => {
-            ['tasks', 'prizes', 'history', 'settings'].forEach(t => { 
-                document.getElementById(`parent-${t}`).classList.add('hidden'); 
-                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 rounded-xl text-gray-500 font-bold'; 
-            });
-            document.getElementById(`parent-${tab}`).classList.remove('hidden'); 
-            document.getElementById(`tab-${tab}`).className = 'flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold';
-        };
-
-        function showNotification(title, msg, sub) { 
-            document.getElementById('modalEmoji').innerText = title.includes('抽中') ? '🎁' : (title.includes('幣不夠') ? '😅' : '🎉');
-            document.getElementById('modalTitle').innerText = title; 
-            document.getElementById('modalMsg').innerHTML = `<b>${msg}</b><br>${sub}`; 
-            document.getElementById('modal').classList.remove('hidden'); 
+        window.savePrizes = () => { for(let i=0; i<12; i++) state.prizes[i] = document.getElementById(`prize-input-${i}`).value; sync(); showNotification('✅ 儲存成功', '轉盤獎項已更新', '🎡'); };
+        window.saveSettings = () => { state.pins.parents = document.getElementById('pin-parents').value; state.pins.wallet = document.getElementById('pin-wallet').value; state.pins.full = document.getElementById('pin-full').value; sync(); showNotification('🔐 修改成功', 'PIN 碼已更新', '🛡️'); };
+        function updateSettingsInputs() { document.getElementById('pin-parents').value = state.pins.parents; document.getElementById('pin-wallet').value = state.pins.wallet; document.getElementById('pin-full').value = state.pins.full; }
+        function renderParentPrizeInputs() {
+            const c = document.getElementById('prizeInputs'); c.innerHTML = '';
+            for(let i=0; i<12; i++) { const inp = document.createElement('input'); inp.id=`prize-input-${i}`; inp.value=state.prizes[i]; inp.className='bg-gray-50 p-2.5 rounded-xl text-[10px] border-none focus:ring-1 focus:ring-rose-200'; c.appendChild(inp); }
         }
-
+        window.switchParentTab = (tab) => {
+            ['tasks', 'prizes', 'history', 'settings'].forEach(t => { document.getElementById(`parent-${t}`).classList.add('hidden'); document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 rounded-xl text-gray-500 font-bold whitespace-nowrap'; });
+            document.getElementById(`parent-${tab}`).classList.remove('hidden'); document.getElementById(`tab-${tab}`).className = 'flex-1 py-2.5 rounded-xl bg-rose-500 text-white font-bold whitespace-nowrap';
+            if (tab === 'history') renderHistory();
+        };
+        function showNotification(title, msg, sub) { document.getElementById('modalEmoji').innerText = title.includes('抽中') ? '🎁' : (title.includes('幣不夠') ? '😅' : '🎉'); document.getElementById('modalTitle').innerText = title; document.getElementById('modalMsg').innerHTML = `<b>${msg}</b><br><small>${sub || ''}</small>`; document.getElementById('modal').classList.remove('hidden'); }
         window.closeModal = () => document.getElementById('modal').classList.add('hidden');
     </script>
 </body>
