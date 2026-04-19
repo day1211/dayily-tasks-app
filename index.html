@@ -100,18 +100,23 @@
             
             <div id="localWarning" class="hidden mt-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl text-amber-800 text-sm w-full">
                 <h3 class="font-bold text-lg mb-2 flex items-center text-rose-600">
-                    <i class="fas fa-exclamation-triangle mr-2"></i> 連線失敗
+                    <i class="fas fa-exclamation-triangle mr-2"></i> 連線失敗 / 本地執行
                 </h3>
-                <p class="mb-2 font-bold">錯誤代碼：<span id="errorCode" class="text-rose-500 underline">None</span></p>
-                <p class="mb-4 text-xs opacity-80">通常是因為 Firebase 控制台的「匿名登入」未啟用，或是「資料庫規則」尚未設為測試模式。</p>
+                <p id="errorDetail" class="mb-2 font-bold text-xs opacity-75">錯誤詳情：尚未連線</p>
+                <p class="mb-4 text-xs opacity-80">
+                    如果您是直接「打開檔案 (file://)」，瀏覽器會阻擋 Firebase 連線。
+                </p>
                 
                 <div class="space-y-3">
-                    <button onclick="location.reload()" class="w-full bg-rose-500 text-white py-3 rounded-xl font-bold active:scale-95 transition-all">
-                        重試連線
-                    </button>
                     <button onclick="startOfflineMode()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">
                         進入離線模式 (試用)
                     </button>
+                    <div class="text-[10px] bg-white/50 p-2 rounded-lg opacity-80">
+                        <b>正確同步的方法：</b><br>
+                        1. 將此檔案上傳至 GitHub Pages 或 Vercel<br>
+                        2. 確保網址是 https:// 開頭<br>
+                        3. 在 Firebase 授權您的 github.io 網域
+                    </div>
                 </div>
             </div>
         </div>
@@ -119,7 +124,7 @@
         <!-- 登入畫面 -->
         <div id="loginView" class="mt-12">
             <div id="offlineBadge" class="hidden text-center mb-6">
-                <span class="bg-gray-200 text-gray-500 text-[10px] px-3 py-1 rounded-full font-bold">離線模式 (僅儲存在此裝置)</span>
+                <span class="bg-gray-200 text-gray-500 text-[10px] px-3 py-1 rounded-full font-bold">目前處於離線模式</span>
             </div>
             <div class="text-center mb-10">
                 <div class="inline-block p-4 bg-white rounded-3xl shadow-sm mb-4">
@@ -134,7 +139,7 @@
                     <span class="text-4xl mr-4">👨‍👩‍👧</span>
                     <div class="text-left">
                         <p class="font-bold text-gray-800 text-lg">爸爸媽媽</p>
-                        <p class="text-xs text-gray-400 italic">管理任務與進度</p>
+                        <p class="text-xs text-gray-400 italic">管理任務與查看進度</p>
                     </div>
                 </button>
 
@@ -162,8 +167,8 @@
                 <h3 id="authTitle" class="text-xl font-bold text-gray-800 mb-6">請輸入 PIN 碼</h3>
                 <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" class="w-full bg-rose-50 border-none rounded-2xl p-5 text-center text-3xl tracking-[1rem] focus:ring-2 focus:ring-rose-300 mb-8">
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="closeAuthModal()" class="flex-1 bg-gray-100 text-gray-500 py-4 rounded-2xl font-bold active:bg-gray-200">取消</button>
-                    <button onclick="verifyPin()" class="flex-1 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200 active:bg-rose-600">確認</button>
+                    <button onclick="closeAuthModal()" class="bg-gray-100 text-gray-500 py-4 rounded-2xl font-bold">取消</button>
+                    <button onclick="verifyPin()" class="bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200">確認</button>
                 </div>
             </div>
         </div>
@@ -210,7 +215,7 @@
                     <div class="bg-white p-6 rounded-[2rem] card-shadow">
                         <p class="text-sm text-gray-400 mb-4 italic">轉盤格子設定 (共 12 格)：</p>
                         <div id="prizeInputs" class="grid grid-cols-2 gap-3"></div>
-                        <button onclick="savePrizes()" class="w-full mt-6 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">儲存轉盤設定</button>
+                        <button onclick="savePrizes()" class="w-full mt-6 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200 active:scale-95 transition-all">儲存轉盤設定</button>
                     </div>
                 </div>
 
@@ -262,7 +267,7 @@
                 </div>
                 
                 <div class="text-center px-4">
-                    <button onclick="showWheel()" class="w-full bg-gradient-to-r from-rose-400 to-orange-400 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl active:scale-95 transition-all">
+                    <button onclick="showWheel()" class="w-full bg-gradient-to-r from-rose-400 to-orange-400 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl shadow-rose-200 active:scale-95 transition-all">
                         🎡 玩大轉盤 (100幣)
                     </button>
                 </div>
@@ -286,7 +291,7 @@
                     <canvas id="wheel" width="300" height="300"></canvas>
                 </div>
                 
-                <button id="spinBtn" onclick="spinWheel()" class="w-full max-w-xs bg-rose-500 text-white py-5 rounded-[2rem] font-bold text-2xl shadow-xl active:scale-95 transition-all disabled:bg-gray-300">
+                <button id="spinBtn" onclick="spinWheel()" class="w-full max-w-xs bg-rose-500 text-white py-5 rounded-[2rem] font-bold text-2xl shadow-xl shadow-rose-100 active:scale-95 transition-all disabled:bg-gray-300">
                     開始抽獎
                 </button>
             </div>
@@ -295,10 +300,10 @@
 
     <!-- 彈窗通知 -->
     <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[100] p-6 backdrop-blur-md">
-        <div class="bg-white rounded-[3rem] p-10 w-full max-w-sm text-center">
+        <div class="bg-white rounded-[3rem] p-10 w-full max-w-sm text-center card-shadow">
             <div id="modalEmoji" class="text-7xl mb-6">🎉</div>
             <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-3"></h3>
-            <p id="modalMsg" class="text-gray-500 mb-8"></p>
+            <p id="modalMsg" class="text-gray-500 mb-8 leading-relaxed"></p>
             <button onclick="closeModal()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold text-lg active:scale-95">太棒了！</button>
         </div>
     </div>
@@ -309,20 +314,33 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        /** * Firebase 配置資訊 */
-        const firebaseConfig = {
-            apiKey: "AIzaSyBltihUwQntGYwr7SWnMhTn0wbSikKDrA0",
-            authDomain: "daily-task-app-b3903.firebaseapp.com",
-            projectId: "daily-task-app-b3903",
-            storageBucket: "daily-task-app-b3903.firebasestorage.app",
-            messagingSenderId: "604414919964",
-            appId: "1:604414919964:web:b5ad125e0a2e69cc1266d9",
-            measurementId: "G-Y0C8C24WMH"
-        };
+        /** 取得 Firebase 配置 **/
+        let firebaseConfig;
+        try {
+            // 首先嘗試檢查環境變數（AI 預覽模式）
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else {
+                // 如果環境變數不存在，使用您提供的硬編碼配置
+                firebaseConfig = {
+                    apiKey: "AIzaSyBltihUwQntGYwr7SWnMhTn0wbSikKDrA0",
+                    authDomain: "daily-task-app-b3903.firebaseapp.com",
+                    projectId: "daily-task-app-b3903",
+                    storageBucket: "daily-task-app-b3903.firebasestorage.app",
+                    messagingSenderId: "604414919964",
+                    appId: "1:604414919964:web:b5ad125e0a2e69cc1266d9",
+                    measurementId: "G-Y0C8C24WMH"
+                };
+            }
+        } catch (e) {
+            console.warn("Config error", e);
+            firebaseConfig = null;
+        }
 
-        let db, auth, userAuth, state = {};
+        let db, auth, userAuth;
         let isOffline = false;
-        const appId = 'task-app-v3';
+        let state = {};
+        const appId = 'daily-task-v3-release';
         const initialState = {
             tasks: [],
             users: { wallet: { name: "小荷包", coins: 0 }, full: { name: "小滿滿", coins: 0 } },
@@ -340,14 +358,30 @@
             refreshUI();
         };
 
+        function showWarning(code, detail) {
+            if (!isOffline) {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('loadingText').innerText = code || "環境不支援";
+                document.getElementById('errorDetail').innerText = "錯誤詳情：" + (detail || "瀏覽器封鎖了連線");
+                document.getElementById('localWarning').classList.remove('hidden');
+            }
+        }
+
         const init = async () => {
+            if (!firebaseConfig || !firebaseConfig.apiKey) {
+                showWarning("配置缺失", "找不到 Firebase Config");
+                return;
+            }
+
             try {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // 嘗試匿名登入
-                await signInAnonymously(auth).catch(err => { throw `Auth: ${err.code}`; });
+                // 嘗試登入
+                await signInAnonymously(auth).catch(err => { 
+                    throw `Auth Error: ${err.code}`; 
+                });
 
                 onAuthStateChanged(auth, (u) => {
                     userAuth = u;
@@ -362,33 +396,30 @@
                             }
                             document.getElementById('loadingOverlay').classList.add('hidden');
                         }, (err) => {
-                            showWarning(`Firestore: ${err.code}`);
+                            showWarning("連線失敗", `Firestore: ${err.code}`);
                         });
                     }
                 });
-            } catch (e) { showWarning(e); }
-        };
-
-        function showWarning(code) {
-            if (!isOffline) {
-                document.getElementById('loadingSpinner').classList.add('hidden');
-                document.getElementById('errorCode').innerText = code || "Unknown";
-                document.getElementById('localWarning').classList.remove('hidden');
+            } catch (e) { 
+                showWarning("初始化錯誤", e); 
             }
-        }
+        };
 
         init();
 
-        // 登入邏輯
+        // --- 全域變數定義 ---
+        let targetRoleForLogin;
+        let currentUser;
+        let spinning = false;
+
+        // --- 核心邏輯 ---
         window.showLoginModal = (role) => { 
             targetRoleForLogin = role; 
             document.getElementById('authModal').classList.remove('hidden'); 
             document.getElementById('pinInput').value = ''; 
         };
+
         window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
-        
-        let targetRoleForLogin;
-        let currentUser;
 
         window.verifyPin = () => {
             if (document.getElementById('pinInput').value === state.pins[targetRoleForLogin]) {
@@ -413,7 +444,7 @@
             document.querySelectorAll('#parentView, #daughterView, #wheelView').forEach(v => v.classList.add('hidden')); 
             document.getElementById('loginView').classList.remove('hidden'); 
         };
-        
+
         async function sync() {
             if (isOffline) { 
                 localStorage.setItem('local_task_v3', JSON.stringify(state)); 
@@ -534,8 +565,6 @@
                 c.appendChild(inp); 
             }
         }
-
-        let spinning = false;
 
         window.showWheel = () => { 
             if(state.users[currentUser].coins < 100) { 
