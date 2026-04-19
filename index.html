@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>成長小天地</title>
+    
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="成長小天地">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        
+        :root {
+            --safe-area-inset-top: env(safe-area-inset-top);
+        }
+
+        body {
+            font-family: 'Noto+Sans+TC', sans-serif;
+            background-color: #fef2f2;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* 讓 App 內容避開 iOS 的劉海屏區域 */
+        .safe-top {
+            padding-top: calc(1rem + var(--safe-area-inset-top));
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 85vw;
+            max-width: 300px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid #fb7185;
+            transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1);
+            overflow: hidden;
+            background: white;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 25px solid #fb7185;
+            z-index: 10;
+        }
+
+        .card-shadow {
+            box-shadow: 0 10px 25px -5px rgba(251, 113, 133, 0.15);
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #fb7185;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #fecaca;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="app" class="max-w-md mx-auto px-4 pb-12 safe-top">
+        
+        <!-- 載入中畫面 / 環境警告 -->
+        <div id="loadingOverlay" class="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-8">
+            <div id="loadingSpinner" class="spinner mb-4"></div>
+            <p id="loadingText" class="text-rose-500 font-bold text-center">正在連線至雲端資料庫...</p>
+            
+            <div id="localWarning" class="hidden mt-6 p-6 bg-amber-50 border-2 border-amber-200 rounded-2xl text-amber-800 text-sm w-full">
+                <h3 class="font-bold text-lg mb-2 flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i> 偵測到本地執行
+                </h3>
+                <p class="mb-4">直接開啟檔案會導致連動功能受阻。</p>
+                <div class="space-y-3">
+                    <button onclick="startOfflineMode()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-transform">
+                        進入離線模式
+                    </button>
+                    <p class="text-[11px] opacity-70">註：離線模式資料僅存在此裝置中。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 登入畫面 -->
+        <div id="loginView" class="mt-12">
+            <div id="offlineBadge" class="hidden text-center mb-6">
+                <span class="bg-gray-200 text-gray-500 text-[10px] px-3 py-1 rounded-full font-bold">離線模式</span>
+            </div>
+            <div class="text-center mb-10">
+                <div class="inline-block p-4 bg-white rounded-3xl shadow-sm mb-4">
+                    <span class="text-5xl">🌈</span>
+                </div>
+                <h1 class="text-3xl font-bold text-rose-500">成長小天地</h1>
+                <p class="text-gray-400 text-sm mt-2">陪伴女兒快樂成長每一天</p>
+            </div>
+
+            <div class="grid gap-4">
+                <button onclick="showLoginModal('parents')" class="bg-white p-5 rounded-3xl card-shadow flex items-center active:scale-95 transition-all">
+                    <span class="text-4xl mr-4">👨‍👩‍👧</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800 text-lg">爸爸媽媽</p>
+                        <p class="text-xs text-gray-400 italic">設定任務與查看進度</p>
+                    </div>
+                </button>
+
+                <button onclick="showLoginModal('wallet')" class="bg-white p-5 rounded-3xl card-shadow border-l-8 border-pink-400 flex items-center active:scale-95 transition-all">
+                    <span class="text-4xl mr-4">👛</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800 text-lg">小荷包</p>
+                        <p class="text-xs text-gray-400 italic">今天的挑戰是什麼呢？</p>
+                    </div>
+                </button>
+
+                <button onclick="showLoginModal('full')" class="bg-white p-5 rounded-3xl card-shadow border-l-8 border-orange-400 flex items-center active:scale-95 transition-all">
+                    <span class="text-4xl mr-4">🌕</span>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-800 text-lg">小滿滿</p>
+                        <p class="text-xs text-gray-400 italic">完成任務領取獎金！</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- 密碼彈窗 -->
+        <div id="authModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[70] p-6 backdrop-blur-sm">
+            <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-xs text-center">
+                <h3 id="authTitle" class="text-xl font-bold text-gray-800 mb-6">請輸入 PIN 碼</h3>
+                <input type="password" id="pinInput" inputmode="numeric" pattern="[0-9]*" placeholder="••••" class="w-full bg-rose-50 border-none rounded-2xl p-5 text-center text-3xl tracking-[1rem] focus:ring-2 focus:ring-rose-300 mb-8">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="closeAuthModal()" class="bg-gray-100 text-gray-500 py-4 rounded-2xl font-bold active:bg-gray-200">取消</button>
+                    <button onclick="verifyPin()" class="bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200 active:bg-rose-600">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 家長介面 -->
+        <div id="parentView" class="hidden">
+            <div class="flex items-center justify-between mb-8">
+                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
+                    <i class="fas fa-sign-out-alt"></i> 登出
+                </button>
+                <h2 class="text-xl font-bold text-gray-800">管理後台</h2>
+                <div class="w-12"></div>
+            </div>
+
+            <nav class="flex mb-6 bg-white/50 p-1.5 rounded-2xl shadow-inner overflow-x-auto whitespace-nowrap no-scrollbar">
+                <button onclick="switchParentTab('tasks')" id="tab-tasks" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500 text-white font-bold transition-all">任務</button>
+                <button onclick="switchParentTab('prizes')" id="tab-prizes" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">獎項</button>
+                <button onclick="switchParentTab('history')" id="tab-history" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">紀錄</button>
+                <button onclick="switchParentTab('settings')" id="tab-settings" class="flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold transition-all">安全</button>
+            </nav>
+
+            <div id="parent-content" class="pb-10">
+                <!-- 內容會動態切換 -->
+                <div id="parent-tasks" class="space-y-4">
+                    <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                        <h3 class="font-bold text-rose-500 mb-4 flex items-center">
+                            <i class="fas fa-plus-circle mr-2"></i> 指派新任務
+                        </h3>
+                        <div class="space-y-3">
+                            <select id="taskTarget" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
+                                <option value="wallet">指派給：小荷包</option>
+                                <option value="full">指派給：小滿滿</option>
+                            </select>
+                            <input type="text" id="taskName" placeholder="任務名稱" class="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
+                            <div class="flex space-x-2">
+                                <input type="number" id="taskReward" placeholder="獎勵幣" class="flex-1 bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-rose-200">
+                                <button onclick="addTask()" class="bg-rose-500 text-white px-6 py-3 rounded-xl font-bold active:scale-95">新增</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="taskListDisplay" class="space-y-3"></div>
+                </div>
+
+                <div id="parent-prizes" class="hidden">
+                    <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                        <p class="text-sm text-gray-400 mb-4 italic">轉盤共有 12 個格子：</p>
+                        <div id="prizeInputs" class="grid grid-cols-2 gap-3"></div>
+                        <button onclick="savePrizes()" class="w-full mt-6 bg-rose-500 text-white py-4 rounded-2xl font-bold shadow-lg shadow-rose-200 active:scale-95 transition-all">儲存轉盤設定</button>
+                    </div>
+                </div>
+
+                <div id="parent-history" class="hidden">
+                    <div id="historyList" class="space-y-3"></div>
+                </div>
+
+                <div id="parent-settings" class="hidden">
+                    <div class="bg-white p-6 rounded-[2rem] card-shadow">
+                        <h3 class="font-bold text-gray-800 mb-4">PIN 碼修改</h3>
+                        <div class="space-y-4">
+                            <div class="bg-rose-50 p-4 rounded-2xl">
+                                <label class="text-xs text-rose-400 font-bold block mb-1">家長 PIN</label>
+                                <input type="text" id="pin-parents" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
+                            </div>
+                            <div class="bg-pink-50 p-4 rounded-2xl">
+                                <label class="text-xs text-pink-400 font-bold block mb-1">小荷包 PIN</label>
+                                <input type="text" id="pin-wallet" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
+                            </div>
+                            <div class="bg-orange-50 p-4 rounded-2xl">
+                                <label class="text-xs text-orange-400 font-bold block mb-1">小滿滿 PIN</label>
+                                <input type="text" id="pin-full" class="w-full bg-transparent border-none p-0 font-bold text-gray-700">
+                            </div>
+                            <button onclick="saveSettings()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold active:scale-95 transition-all">確認修改</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 女兒介面 -->
+        <div id="daughterView" class="hidden">
+            <div class="flex items-center justify-between mb-8">
+                <button onclick="logout()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
+                    <i class="fas fa-sign-out-alt"></i> 登出
+                </button>
+                <h2 id="daughterTitle" class="text-xl font-bold text-gray-800"></h2>
+                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold flex items-center shadow-sm">
+                    <i class="fas fa-coins mr-2"></i> <span id="coinBalance">0</span>
+                </div>
+            </div>
+            
+            <div id="daughterMain" class="space-y-8">
+                <div class="bg-white p-6 rounded-[2.5rem] card-shadow">
+                    <h3 class="font-bold text-gray-800 mb-6 flex items-center text-lg">
+                        <i class="fas fa-tasks mr-2 text-rose-300"></i> 今日任務
+                    </h3>
+                    <div id="daughterTaskList" class="space-y-4"></div>
+                </div>
+                
+                <div class="text-center px-4">
+                    <button onclick="showWheel()" class="w-full bg-gradient-to-r from-rose-400 to-orange-400 text-white py-6 rounded-[2rem] font-bold text-xl shadow-xl shadow-rose-200 active:scale-95 transition-all">
+                        🎡 玩大轉盤 (100幣)
+                    </button>
+                    <p class="text-gray-400 text-xs mt-4 italic">累積 100 幣就能抽獎一次喔！加油！</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 轉盤畫面 -->
+        <div id="wheelView" class="hidden">
+            <div class="flex items-center justify-between mb-10">
+                <button onclick="backToDaughter()" class="text-rose-500 font-bold bg-white px-4 py-2 rounded-full shadow-sm">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <div class="bg-amber-100 text-amber-600 px-4 py-2 rounded-full font-bold flex items-center">
+                    <i class="fas fa-coins mr-2"></i> <span id="wheelCoinBalance">0</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center justify-center min-h-[50vh]">
+                <div class="wheel-container mb-12">
+                    <div class="wheel-pointer"></div>
+                    <canvas id="wheel" width="300" height="300"></canvas>
+                </div>
+                
+                <button id="spinBtn" onclick="spinWheel()" class="w-full max-w-xs bg-rose-500 text-white py-5 rounded-[2rem] font-bold text-2xl shadow-xl shadow-rose-100 active:scale-95 transition-all disabled:bg-gray-300 disabled:shadow-none">
+                    試試手氣！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 彈窗通知 -->
+    <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[100] p-6 backdrop-blur-md">
+        <div class="bg-white rounded-[3rem] p-10 w-full max-w-sm text-center card-shadow">
+            <div id="modalEmoji" class="text-7xl mb-6">🎉</div>
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-3"></h3>
+            <p id="modalMsg" class="text-gray-500 mb-8 leading-relaxed"></p>
+            <button onclick="closeModal()" class="w-full bg-rose-500 text-white py-4 rounded-2xl font-bold text-lg active:scale-95">太棒了！</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let firebaseConfig, db, auth;
+        let isOffline = false;
+        
+        const initialState = {
+            tasks: [],
+            users: { wallet: { name: "小荷包", coins: 0 }, full: { name: "小滿滿", coins: 0 } },
+            prizes: ["糖果", "電視20分", "去公園", "冰淇淋", "大抱抱", "再轉一次", "神秘禮物", "點心", "Switch", "彩色筆", "免家事", "故事書"],
+            history: [],
+            pins: { parents: "8888", wallet: "1111", full: "2222" }
+        };
+
+        let state = { ...initialState };
+        let currentUser = null;
+        let targetRoleForLogin = null;
+        let userAuth = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'task-app-v3';
+
+        window.startOfflineMode = () => {
+            isOffline = true;
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            document.getElementById('offlineBadge').classList.remove('hidden');
+            const saved = localStorage.getItem('local_task_v3');
+            if (saved) state = JSON.parse(saved);
+            refreshUI();
+        };
+
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "" };
+            if (!firebaseConfig.apiKey) throw "local";
+
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (e) { showWarning(); }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (u) => {
+                userAuth = u;
+                if (u) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'app', 'global');
+                    onSnapshot(docRef, (snap) => {
+                        if (snap.exists()) {
+                            state = snap.data();
+                            refreshUI();
+                        } else {
+                            setDoc(docRef, initialState);
+                        }
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                    }, (err) => showWarning());
+                }
+            });
+        } catch (e) { showWarning(); }
+
+        function showWarning() {
+            if (!isOffline) {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('loadingText').innerText = "無法連線";
+                document.getElementById('localWarning').classList.remove('hidden');
+            }
+        }
+
+        // --- 全域導出 ---
+        window.showLoginModal = (role) => {
+            targetRoleForLogin = role;
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('pinInput').value = '';
+            document.getElementById('pinInput').focus();
+        };
+        window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
+        window.verifyPin = () => {
+            const pin = document.getElementById('pinInput').value;
+            if (pin === state.pins[targetRoleForLogin]) {
+                currentUser = targetRoleForLogin;
+                closeAuthModal();
+                loginSuccess();
+            } else { alert('PIN 碼錯誤！'); }
+        };
+        function loginSuccess() {
+            document.getElementById('loginView').classList.add('hidden');
+            if (currentUser === 'parents') {
+                document.getElementById('parentView').classList.remove('hidden');
+                renderParentPrizeInputs();
+                updateSettingsInputs();
+            } else {
+                document.getElementById('daughterView').classList.remove('hidden');
+            }
+            refreshUI();
+        }
+        window.logout = () => {
+            currentUser = null;
+            document.querySelectorAll('#parentView, #daughterView, #wheelView').forEach(v => v.classList.add('hidden'));
+            document.getElementById('loginView').classList.remove('hidden');
+        };
+
+        async function sync() {
+            if (isOffline) {
+                localStorage.setItem('local_task_v3', JSON.stringify(state));
+                refreshUI();
+            } else if (userAuth) {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app', 'global'), state);
+            }
+        }
+
+        function refreshUI() {
+            if (!currentUser) return;
+            if (currentUser === 'parents') {
+                renderTaskList();
+                renderHistory();
+            } else {
+                updateDaughterUI();
+            }
+            if (!document.getElementById('wheelView').classList.contains('hidden')) {
+                document.getElementById('wheelCoinBalance').innerText = state.users[currentUser].coins;
+                drawWheel();
+            }
+        }
+
+        window.addTask = async () => {
+            const name = document.getElementById('taskName').value;
+            const reward = parseInt(document.getElementById('taskReward').value);
+            const target = document.getElementById('taskTarget').value;
+            if (!name || isNaN(reward)) return;
+            state.tasks.push({ id: Date.now(), name, reward, target, completed: false });
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskReward').value = '';
+            await sync();
+        };
+
+        window.deleteTask = async (id) => {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            await sync();
+        };
+
+        window.completeTask = async (id) => {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task || task.completed) return;
+            task.completed = true;
+            state.users[currentUser].coins += task.reward;
+            state.history.push({ time: Date.now(), user: currentUser, task: task.name });
+            await sync();
+            showNotification('🌟 太棒了', `完成「${task.name}」`, '得到 ' + task.reward + ' 幣！');
+        };
+
+        window.savePrizes = async () => {
+            for (let i = 0; i < 12; i++) {
+                state.prizes[i] = document.getElementById(`prize-input-${i}`).value || "空獎";
+            }
+            await sync();
+            showNotification('🎡 設定完成', '轉盤已經更新', '女兒們可以抽獎囉！');
+        };
+
+        window.saveSettings = async () => {
+            state.pins.parents = document.getElementById('pin-parents').value;
+            state.pins.wallet = document.getElementById('pin-wallet').value;
+            state.pins.full = document.getElementById('pin-full').value;
+            await sync();
+            showNotification('🔐 密碼更新', 'PIN 碼已修改', '請記得新密碼喔！');
+        };
+
+        function updateSettingsInputs() {
+            document.getElementById('pin-parents').value = state.pins.parents;
+            document.getElementById('pin-wallet').value = state.pins.wallet;
+            document.getElementById('pin-full').value = state.pins.full;
+        }
+
+        function renderTaskList() {
+            const list = document.getElementById('taskListDisplay');
+            list.innerHTML = '<h3 class="font-bold text-gray-400 text-sm mb-3">進行中任務</h3>';
+            state.tasks.filter(t => !t.completed).forEach(task => {
+                const targetName = task.target === 'wallet' ? '👛 小荷包' : '🌕 小滿滿';
+                const div = document.createElement('div');
+                div.className = 'bg-white p-4 rounded-2xl flex justify-between items-center border border-gray-50';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-xs font-bold px-2 py-1 rounded-lg bg-gray-100 text-gray-500">${targetName}</span>
+                        <div>
+                            <p class="font-bold text-gray-700">${task.name}</p>
+                            <p class="text-xs text-amber-500 font-bold"><i class="fas fa-coins"></i> ${task.reward}</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteTask(${task.id})" class="text-gray-200 hover:text-red-400 px-2"><i class="fas fa-trash"></i></button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = '<h3 class="font-bold text-gray-400 text-sm mb-3">最近完成紀錄</h3>';
+            [...state.history].sort((a,b) => b.time - a.time).slice(0, 20).forEach(log => {
+                const date = new Date(log.time).toLocaleDateString();
+                const userLabel = log.user === 'wallet' ? '小荷包' : '小滿滿';
+                const div = document.createElement('div');
+                div.className = 'bg-white p-4 rounded-2xl flex justify-between items-center text-sm';
+                div.innerHTML = `<div><b class="text-rose-400">${userLabel}</b> 完成了 ${log.task}</div><div class="text-[10px] text-gray-300">${date}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        function updateDaughterUI() {
+            const user = state.users[currentUser];
+            document.getElementById('daughterTitle').innerText = user.name;
+            document.getElementById('coinBalance').innerText = user.coins;
+            const list = document.getElementById('daughterTaskList');
+            list.innerHTML = '';
+            const myTasks = state.tasks.filter(t => t.target === currentUser);
+            myTasks.forEach(task => {
+                const div = document.createElement('div');
+                div.className = `p-5 rounded-2xl flex justify-between items-center transition-all ${task.completed ? 'opacity-40 bg-gray-50' : 'bg-white shadow-sm ring-1 ring-rose-50'}`;
+                div.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="mr-4">
+                            ${task.completed ? '<i class="fas fa-check-circle text-green-400 text-3xl"></i>' : `<button onclick="completeTask(${task.id})" class="w-9 h-9 rounded-full border-4 border-rose-200 active:scale-90 transition-transform"></button>`}
+                        </div>
+                        <div>
+                            <p class="font-bold text-lg ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}">${task.name}</p>
+                            <p class="text-sm text-amber-500 font-bold"><i class="fas fa-coins mr-1"></i> ${task.reward}</p>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderParentPrizeInputs() {
+            const container = document.getElementById('prizeInputs');
+            container.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = state.prizes[i] || '';
+                input.className = 'bg-gray-50 border-none rounded-xl p-2.5 text-xs focus:ring-1 focus:ring-rose-200';
+                input.id = `prize-input-${i}`;
+                container.appendChild(input);
+            }
+        }
+
+        let spinning = false;
+        window.showWheel = () => {
+            if (state.users[currentUser].coins < 100) {
+                showNotification('🪙 幣不夠喔', '再努力一下', '累積 100 幣才能抽獎');
+                return;
+            }
+            document.getElementById('daughterView').classList.add('hidden');
+            document.getElementById('wheelView').classList.remove('hidden');
+            refreshUI();
+        };
+        window.backToDaughter = () => {
+            document.getElementById('wheelView').classList.add('hidden');
+            document.getElementById('daughterView').classList.remove('hidden');
+        };
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheel');
+            const ctx = canvas.getContext('2d');
+            const colors = ['#FDA4AF', '#FCD34D', '#F9A8D4', '#FB923C', '#6EE7B7', '#93C5FD', '#A5B4FC', '#D8B4FE', '#FDE68A', '#F9A8D4', '#6EE7B7', '#FDBA74'];
+            ctx.clearRect(0,0,300,300);
+            const slice = (2 * Math.PI) / 12;
+            for (let i = 0; i < 12; i++) {
+                ctx.beginPath();
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, 145, i * slice, (i + 1) * slice);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.save();
+                ctx.translate(150, 150);
+                ctx.rotate(i * slice + slice / 2);
+                ctx.textAlign = "right"; ctx.fillStyle = "#333"; ctx.font = "bold 11px Noto Sans TC";
+                ctx.fillText(state.prizes[i].substring(0, 6), 135, 5);
+                ctx.restore();
+            }
+        }
+
+        window.spinWheel = async () => {
+            if (spinning) return;
+            state.users[currentUser].coins -= 100;
+            await sync();
+            spinning = true;
+            document.getElementById('spinBtn').disabled = true;
+            const wheel = document.getElementById('wheel');
+            const deg = Math.floor(Math.random() * 360) + 3600; // 轉10圈
+            wheel.style.transform = `rotate(${deg}deg)`;
+            setTimeout(async () => {
+                spinning = false;
+                document.getElementById('spinBtn').disabled = false;
+                const actual = (deg % 360);
+                const idx = Math.floor(((360 + 270 - actual) % 360) / 30);
+                showNotification('🎁 抽中了！', '恭喜你！', `獲得：${state.prizes[idx]}`);
+                wheel.style.transition = 'none';
+                wheel.style.transform = `rotate(${actual}deg)`;
+                setTimeout(() => { wheel.style.transition = 'transform 4s cubic-bezier(0.1, 0, 0.2, 1)'; }, 100);
+            }, 4000);
+        };
+
+        window.switchParentTab = (tab) => {
+            ['tasks', 'prizes', 'history', 'settings'].forEach(t => {
+                document.getElementById(`parent-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = 'flex-1 py-2.5 px-4 rounded-xl text-gray-500 font-bold';
+            });
+            document.getElementById(`parent-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = 'flex-1 py-2.5 px-4 rounded-xl bg-rose-500 text-white font-bold';
+        };
+
+        function showNotification(title, msg, sub) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMsg').innerHTML = `<b>${msg}</b><br>${sub}`;
+            document.getElementById('modalEmoji').innerText = title.includes('抽中') ? '🎁' : (title.includes('幣不夠') ? '😅' : '🎉');
+            document.getElementById('modal').classList.remove('hidden');
+        }
+        window.closeModal = () => document.getElementById('modal').classList.add('hidden');
+    </script>
+</body>
+</html>
